@@ -1,0 +1,41 @@
+name: "nuclei"
+on:
+  workflow_dispatch:
+    inputs:
+      domain_target:
+        description: "Target to scan"
+        required: true
+        default: "uber.com"
+
+jobs:
+
+  discovery:
+    name: Discovery
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    - name: Get docker image
+      run: |
+        docker pull ghcr.io/neriberto/bloodhound:develop
+    - name: Execute nuclei
+      id: nuclei
+      env:
+        DOMAIN_TARGET: ${{ github.event.inputs.domain_target }}
+      run: |
+        mkdir ./data
+        docker run --rm -v ./data:/data ghcr.io/neriberto/bloodhound:develop nuclei -target $DOMAIN_TARGET -j -o /data/nuclei.json
+        echo "target: $DOMAIN_TARGET" >> $GITHUB_STEP_SUMMARY
+    - name: Send data to Cribl
+      env:
+        CRIBL_HOST: ${{ secrets.CRIBL_HOST }}
+        CRIBL_API_KEY: ${{ secrets.CRIBL_API_KEY }}
+      run: |
+        docker run --rm -v ./data:/data ghcr.io/neriberto/bloodhound:develop logme -sourcetype nuclei -server https://$CRIBL_HOST:8088/services/collector/event -token $CRIBL_API_KEY -file /data/nuclei.json -bl
+    - name: Upload nuclei report
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuclei
+        path: ./data/nuclei.json
