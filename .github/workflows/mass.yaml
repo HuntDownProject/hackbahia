@@ -1,0 +1,38 @@
+name: "mass scan"
+on:
+  workflow_dispatch:
+
+jobs:
+
+  discovery:
+    name: Discovery
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    - name: Get docker image
+      run: |
+        docker pull ghcr.io/neriberto/bloodhound:develop
+    - name: Execute nuclei
+      id: httpx
+      run: |
+        mkdir ./data
+        docker run --rm -v ./inputs:/inputs -v ./data:/data ghcr.io/neriberto/bloodhound:develop httpx -l /inputs/domains.txt -o /data/online.txt
+    - name: Execute nuclei
+      id: nuclei
+      run: |
+        docker run --rm -v ./data:/data ghcr.io/neriberto/bloodhound:develop nuclei -nh -nc -l /data/online.txt -severity low,medium,high,critical -j -o /data/nuclei.json
+        echo "target: $DOMAIN_TARGET" >> $GITHUB_STEP_SUMMARY
+    - name: Send data to Cribl
+      env:
+        CRIBL_HOST: ${{ secrets.CRIBL_HOST }}
+        CRIBL_API_KEY: ${{ secrets.CRIBL_API_KEY }}
+      run: |
+        docker run --rm -v ./data:/data ghcr.io/neriberto/bloodhound:develop logme -sourcetype nuclei -server https://$CRIBL_HOST:8088/services/collector/event -token $CRIBL_API_KEY -file /data/nuclei.json -bl
+    - name: Upload nuclei report
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuclei
+        path: ./data/nuclei.json
