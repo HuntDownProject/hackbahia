@@ -34,3 +34,22 @@ Executa o `nuclei` salva a saída da aplicação como sumário e envia dados par
 source: `.github/workflows/subfinder.yaml`
 
 Executa o `subfinder` salva a saída da aplicação como sumário e envia dados para o `cribl`
+
+### 5. Mass
+
+source: `.github/workflows/mass.yaml`
+
+Executa o `httpx` tendo como uma entrada um arquivo com várias URLs, a saída do httpx é uma lista de endereços online que é então utlizado como entrada para o `nuclei`. Como observação o nuclei utiliza o httpx internamente podendo ser habilitado/desabilitado através de parâmetros na linha comando, logo esse fluxo é apenas um exemplo.
+
+## Links e aplicações utilizadas
+
+Segue abaixo links de aplicações utilizadas e mencionadas na apresentação.
+
+* https://github.com/HuntDownProject/HEDnsExtractor
+* https://github.com/HuntDownProject/logme
+* https://github.com/neriberto/bloodhound
+* https://github.com/projectdiscovery/subfinder
+* https://github.com/projectdiscovery/httpx
+* https://github.com/projectdiscovery/nuclei
+* https://cribl.io/
+* https://www.splunk.com/
